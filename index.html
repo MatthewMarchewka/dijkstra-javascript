@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <script>
+        document.addEventListener("DOMContentLoaded", function(event) {
+            //****************    VARIABLES    ****************
+            var size = 9                                       //size of line on gamefield
+            var ContentTab = []                                //Array of content from game elements
+            var ElementTab = []                                //Array of elements on gamefield
+            var Add_S_Condition = true                         //condition of adding start marker
+            var Add_M_Condition = true                         //condition of adding meta marker
+            var BallsBeginning = 3                             //Number of balls in the beginning
+            var StepArray = []                                 //Array with steps
+            var Step = 1;
+            var RecursionCondition = true
+            //****************    FUNCTIONS    ****************
+            /*
+            action: Filling ContentTab with 0, ElementTab with Arrays 
+            */
+            function PreparingArrays(){
+                // Creating a horizontal axis
+                for(var x=0; x<size; x++){
+                ContentTab[x] = []
+                ElementTab[x] = []
+                    // Creating a vertical axis
+                    for(var y=0; y<size; y++){
+                        ContentTab[x][y] = 0
+                        ElementTab[x][y] = [] 
+                    }
+                }  
+            }
+            /*
+            input: minimum and maximum value of tab
+            output: rounded value of random number
+            */
+            function randomize(min, max) {
+                return Math.floor(Math.random() * (max - min + 1)) + min
+            }
+            /*
+            action: add first n stones  to playground (n is Ballsbeginning number)
+            */
+            function AddingFirstStones(){
+                for(var x=0 ; x<BallsBeginning ; x++){
+                    var kamienX = randomize(0,size-1)
+                    var kamienY = randomize(0,size-1)
+
+                    if(ContentTab[kamienX][kamienY]==0){
+                        ContentTab[kamienX][kamienY]="X"
+                    }
+                }
+            }
+            /*
+            action: Making a table with ContentTab content
+            */
+            function FillElementTab(){
+                // If table already exist, delete it
+                if(document.getElementsByTagName("table")[0]!=null)
+                    document.getElementsByTagName("table")[0].remove()
+                // Adding an table to a page
+                var table = document.createElement("table")
+                document.body.append(table)
+                // Making an tr, td elements in table
+                for(var x=0; x<size; x++){
+                    var tr = document.createElement("tr")
+                    table.append(tr)              
+                    for(var y=0; y<size; y++){
+                        var td = document.createElement("td")
+                        td.id = [x]+"_"+[y]
+                        td.innerHTML = ContentTab[x][y]
+                        ElementTab[x][y] = td
+                        ElementTab[x][y].onclick = function(){
+                            /*
+                            action: listener for Adding S and M marker
+                            */
+                            var x = parseInt(this.id.split("_")[0])
+                            var y = parseInt(this.id.split("_")[1])
+                            if(ContentTab[x][y]==0){
+                                if(Add_S_Condition){
+                                    Add_S_Condition = false
+                                    ContentTab[x][y]="S"
+                                    ElementTab[x][y].innerHTML = "S"
+                                    StepArray[0] = x
+                                    StepArray[1] = y
+                                }else if(Add_M_Condition){
+                                    Add_M_Condition = false
+                                    ContentTab[x][y]="M"
+                                    ElementTab[x][y].innerHTML = "M"
+                                    ShortestWay(StepArray);
+                                    //removing onclick event
+                                    for(var RemoveX=0; RemoveX<size; RemoveX++){
+                                        for(var RemoveY=0; RemoveY<size; RemoveY++){
+                                            ElementTab[RemoveX][RemoveY].onclick = null;  
+                                        }
+                                    }
+                                }
+                            }
+                            
+                        }
+                        tr.append(td) 
+                    }
+                }
+            }
+            /*
+            input: Array with steps on current state of road to meta marker
+            action: Function with recuration find closest way between start and meta markers - with Dijkstra algorithm
+            */
+            function ShortestWay( StepArray ){
+
+                // Length of the previous array with step elements
+                var lengthPreviousArray =  StepArray.length
+                // Loop through all the elements
+                for(var x=0; x< lengthPreviousArray; x=x+2){
+                    var centerX = StepArray[x]
+                    var centerY = StepArray[x+1]
+
+                    // Checking points around a center
+                        // W point
+                    if( (centerX-1) >= 0 && ContentTab[centerX-1][centerY]==0){
+                        ElementTab[centerX-1][centerY].innerHTML = Step
+                        ContentTab[centerX-1][centerY] = Step
+                        StepArray.push(centerX-1 , centerY )
+                    }
+                        // A point
+                    if( (centerY-1) >= 0 && ContentTab[centerX][centerY-1]==0){
+                        ElementTab[centerX][centerY-1].innerHTML = Step
+                        ContentTab[centerX][centerY-1] = Step
+                        StepArray.push(centerX , centerY-1 )
+                    }
+                        // S point
+                    if( (centerX+1) < size && ContentTab[centerX+1][centerY]==0){
+                        ElementTab[centerX+1][centerY].innerHTML = Step
+                        ContentTab[centerX+1][centerY] = Step
+                        StepArray.push(centerX+1 , centerY )
+                    }
+                        // D point
+                    if( (centerY+1) < size && ContentTab[centerX][centerY+1]==0){
+                        ElementTab[centerX][centerY+1].innerHTML = Step
+                        ContentTab[centerX][centerY+1] = Step
+                        StepArray.push(centerX , centerY+1 )
+                    }
+                }
+                // Loop checking whether the items round to the saved points are not meta marker
+                for(var y=0; y< StepArray.length; y=y+2){
+                    if( StepArray[y]-1 >= 0 && ContentTab[ StepArray[y]-1 ][ StepArray[y+1] ]=="M")
+                        RecursionCondition = false
+                    if( StepArray[y+1]-1 >= 0 && ContentTab[ StepArray[y] ][ StepArray[y+1]-1 ]=="M")
+                        RecursionCondition = false
+                    if( StepArray[y] +1 < size && ContentTab[ StepArray[y] +1 ][ StepArray[y+1] ]=="M")
+                        RecursionCondition = false
+                    if( StepArray[y+1] +1 < size && ContentTab[ StepArray[y] ][ StepArray[y+1] +1 ]=="M")
+                        RecursionCondition = false
+                }
+
+                //The function calls itself if none of the next object is equal to meta marker
+                if( RecursionCondition ){
+                    Step++;
+                    StepArray.slice(lengthPreviousArray)
+                    ShortestWay(StepArray)
+                }
+          
+            }
+             
+            //****************    MAIN GAME    **************** 
+            PreparingArrays()
+            AddingFirstStones()
+            FillElementTab()
+
+
+        // end of ----------------------------------------------------------------------------------------------------------------------
+        })
+    </script>
+</body>
+</html>
